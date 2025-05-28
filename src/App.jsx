@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import './index.css';
 
 // --- Linera Service Mock --- (Placeholder for actual Linera integration)
@@ -226,10 +226,13 @@ function GameBoard({ board, boardSizePx, tileSize }) {
         width: boardSizePx,
         height: boardSizePx,
         boxSizing: 'border-box',
+        // Added for focus
+        position: 'relative', // Needed for absolute positioning of overlays
+        outline: 'none', // Remove default focus outline if desired
     };
 
     return (
-        <div id="game-board" style={boardStyle}>
+        <div id="game-board" style={boardStyle} tabIndex={0}> {/* Added tabIndex */} 
             {board.map((row, rIndex) =>
                 row.map((tileData, cIndex) => (
                     <Tile 
@@ -256,6 +259,7 @@ function App() {
   const [isLevelComplete, setIsLevelComplete] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const gameContainerRef = useRef(null); // Ref for the main container
 
   const currentLevelConfig = gameLevels[currentLevelIndex] || gameLevels[0];
   const tileSize = (boardPixelSize - (currentLevelConfig.boardSize + 1) * gapSize) / currentLevelConfig.boardSize;
@@ -301,6 +305,7 @@ function App() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playerProgression.bestScores]); 
 
+  // Load data on initial mount
   useEffect(() => {
     const loadData = async () => {
       setIsLoading(true);
@@ -319,15 +324,15 @@ function App() {
       } else {
         initializeLevel(levelToLoadIdx);
       }
-      // Ensure bestScoreForLevel is set based on the loaded progression for the initialized level
       const currentBest = progression.bestScores?.[gameLevels[levelToLoadIdx].level] || 0;
       setBestScoreForLevel(currentBest);
       setIsLoading(false);
     };
     loadData();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initializeLevel]); // initializeLevel is now stable if playerProgression.bestScores doesn't change during init
+  }, []); // Removed initializeLevel dependency here, load only once
 
+  // Save game state when board/score changes
   useEffect(() => {
     if (!isLoading && !isGameOver && !isLevelComplete && board.length > 0 && currentLevelConfig) {
       const gameState = {
@@ -340,6 +345,7 @@ function App() {
     }
   }, [board, score, currentLevelConfig, isLoading, isGameOver, isLevelComplete]);
 
+  // Save player progression when it changes
   useEffect(() => {
     if (!isLoading) {
         setIsSaving(true);
@@ -347,12 +353,13 @@ function App() {
     }
   }, [playerProgression, isLoading]);
 
+  // Handle key presses
   const handleKeyPress = useCallback((event) => {
     if (isGameOver || isLevelComplete || isLoading || isSaving) return;
 
     const validKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'];
     if (!validKeys.includes(event.key)) return;
-    event.preventDefault();
+    event.preventDefault(); // Prevent page scrolling with arrow keys
 
     const { board: movedBoard, scoreIncrease, moved } = moveTiles(board, event.key);
 
@@ -385,23 +392,34 @@ function App() {
         setIsGameOver(true);
       }
     }
-  }, [board, score, isGameOver, isLevelComplete, isLoading, isSaving, currentLevelConfig, playerProgression, currentLevelIndex, initializeLevel]);
+  }, [board, score, isGameOver, isLevelComplete, isLoading, isSaving, currentLevelConfig, playerProgression, currentLevelIndex]); // Removed initializeLevel dependency
 
+  // Add and remove key listener
   useEffect(() => {
-    window.addEventListener('keydown', handleKeyPress);
+    const currentRef = gameContainerRef.current;
+    if (currentRef) {
+        currentRef.focus(); // Focus the container on mount/update
+        currentRef.addEventListener('keydown', handleKeyPress);
+    }
     return () => {
-      window.removeEventListener('keydown', handleKeyPress);
+      if (currentRef) {
+        currentRef.removeEventListener('keydown', handleKeyPress);
+      }
     };
-  }, [handleKeyPress]);
+  }, [handleKeyPress]); // Re-attach if handleKeyPress changes
+
+  // Focus the game container when the game is active
+  useEffect(() => {
+    if (!isLoading && !isGameOver && !isLevelComplete && gameContainerRef.current) {
+      gameContainerRef.current.focus();
+    }
+  }, [isLoading, isGameOver, isLevelComplete]);
 
   const startNewGame = () => {
     setIsLoading(true);
     const newProgression = { currentLevel: 1, bestScores: {} };
     setPlayerProgression(newProgression); 
-    // initializeLevel will be called by the useEffect that watches playerProgression, 
-    // or we can call it directly. Direct call is more predictable here.
     initializeLevel(0); // Start from level 1 (index 0)
-    // No need to explicitly save progression here, the useEffect for playerProgression will handle it.
   };
 
   const handleTryAgain = () => {
@@ -413,8 +431,6 @@ function App() {
       const nextLevelIndex = currentLevelIndex + 1;
       initializeLevel(nextLevelIndex);
     } else {
-      // Optionally, handle completion of all levels (e.g., show a special message)
-      // For now, just allow replaying the last level or starting a new game.
       alert("Congratulations! You've completed all levels!");
     }
   };
@@ -424,7 +440,14 @@ function App() {
   }
 
   return (
-    <div className="container">
+    // Added ref and tabIndex to the main container
+    <div 
+      className="container"
+      ref={gameContainerRef} 
+      tabIndex={-1} // Allows focus via JS but not via keyboard tabbing
+      style={{outline: 'none'}} // Hide focus outline on the main container
+      onKeyDown={handleKeyPress} // Attach listener here as well for robustness
+    >
       <div className="heading">
         <h1>2048</h1>
         <div className="scores-container">
