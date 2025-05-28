@@ -1,0 +1,296 @@
+/****************************************/
+/*           GENERAL STYLES           */
+/****************************************/
+body {
+    font-family: 'Arial', sans-serif;
+    background-color: #faf8ef;
+    color: #776e65;
+    margin: 0;
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    box-sizing: border-box;
+}
+
+#root {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.container {
+    background-color: #bbada0;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 0 20px rgba(0,0,0,0.1);
+    text-align: center;
+    max-width: 500px;
+    width: 100%;
+}
+
+/****************************************/
+/*              HEADING                 */
+/****************************************/
+.heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+h1 {
+    font-size: 3.5em;
+    font-weight: bold;
+    margin: 0;
+    color: #776e65;
+}
+
+.scores-container {
+    display: flex;
+    gap: 10px;
+}
+
+.score-box {
+    background-color: #cdc1b4;
+    padding: 10px 20px;
+    border-radius: 5px;
+    font-size: 0.9em;
+    font-weight: bold;
+    color: #f9f6f2;
+    min-width: 80px; /* Ensure consistent width */
+}
+
+.score-box div {
+    font-size: 1.8em;
+    font-weight: bold;
+    color: #ffffff;
+    margin-top: 5px;
+}
+
+/****************************************/
+/*            GAME META                 */
+/****************************************/
+.game-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.level-container {
+    font-size: 1.2em;
+    font-weight: bold;
+    color: #776e65;
+}
+
+#new-game-button, #try-again-button, #next-level-button, .game-button {
+    background-color: #8f7a66;
+    color: #f9f6f2;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+#new-game-button:hover, #try-again-button:hover, #next-level-button:hover, .game-button:hover {
+    background-color: #776e65;
+}
+
+/****************************************/
+/*          GAME BOARD & TILES          */
+/****************************************/
+#game-board-container {
+    position: relative; /* For overlay messages */
+    margin-bottom: 20px;
+}
+
+#game-board {
+    display: grid;
+    /* grid-template-columns will be set by JS based on boardSize */
+    /* grid-template-rows will be set by JS based on boardSize */
+    gap: 10px;
+    background-color: #cdc1b4;
+    border: 10px solid #cdc1b4;
+    border-radius: 6px;
+    width: 100%;
+    aspect-ratio: 1 / 1; /* Maintain square shape */
+    box-sizing: border-box;
+}
+
+.tile-cell {
+    background-color: rgba(238, 228, 218, 0.35);
+    border-radius: 3px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 2em; /* Base size, JS might adjust for larger numbers/boards */
+    font-weight: bold;
+    color: #776e65;
+    transition: transform 0.1s ease-in-out, background-color 0.1s ease-in-out, top 0.1s ease-in-out, left 0.1s ease-in-out;
+    position: relative; /* For animations if we use absolute positioning for tiles */
+}
+
+/* Tile Colors - inspired by original 2048 */
+.tile-2 { background-color: #eee4da; color: #776e65; }
+.tile-4 { background-color: #ede0c8; color: #776e65; }
+.tile-8 { background-color: #f2b179; color: #f9f6f2; }
+.tile-16 { background-color: #f59563; color: #f9f6f2; }
+.tile-32 { background-color: #f67c5f; color: #f9f6f2; }
+.tile-64 { background-color: #f65e3b; color: #f9f6f2; }
+.tile-128 { background-color: #edcf72; color: #f9f6f2; font-size: 1.8em;}
+.tile-256 { background-color: #edcc61; color: #f9f6f2; font-size: 1.8em;}
+.tile-512 { background-color: #edc850; color: #f9f6f2; font-size: 1.8em;}
+.tile-1024 { background-color: #edc53f; color: #f9f6f2; font-size: 1.5em;}
+.tile-2048 { background-color: #edc22e; color: #f9f6f2; font-size: 1.5em;}
+.tile-4096 { background-color: #3c3a32; color: #f9f6f2; font-size: 1.5em;}
+.tile-8192 { background-color: #3c3a32; color: #f9f6f2; font-size: 1.5em;}
+
+/* Actual tile rendering will be more dynamic in React */
+.tile {
+    position: absolute; /* For smooth animations on top of the grid cells */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+    border-radius: 3px;
+    /* width, height, font-size, top, left will be set by JS */
+    transition: top 0.15s ease-out, left 0.15s ease-out, transform 0.15s ease-out, opacity 0.15s ease-out;
+}
+
+.tile-new {
+    transform: scale(0);
+    animation: newTileSpawn 0.2s ease-in-out forwards;
+}
+
+.tile-merged .tile-inner {
+    animation: mergedTilePulse 0.2s ease-in-out;
+}
+
+.tile-inner {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 3px;
+}
+
+@keyframes newTileSpawn {
+    0% { transform: scale(0); }
+    100% { transform: scale(1); }
+}
+
+@keyframes mergedTilePulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+}
+
+/****************************************/
+/*        MESSAGE OVERLAYS            */
+/****************************************/
+.message-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(238, 228, 218, 0.85);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    border-radius: 6px;
+    z-index: 10;
+}
+
+.message-overlay p {
+    font-size: 2.5em;
+    font-weight: bold;
+    color: #776e65;
+    margin-bottom: 20px;
+}
+
+/****************************************/
+/*           INSTRUCTIONS & INFO        */
+/****************************************/
+.instructions {
+    font-size: 0.9em;
+    color: #776e65;
+    margin-top: 20px;
+}
+
+.linera-info {
+    font-size: 0.8em;
+    color: #a39a90;
+    margin-top: 10px;
+}
+
+/****************************************/
+/*           RESPONSIVE DESIGN          */
+/****************************************/
+@media (max-width: 540px) {
+    body {
+        padding: 10px;
+    }
+    .container {
+        padding: 15px;
+    }
+    h1 {
+        font-size: 2.5em;
+    }
+    .score-box {
+        padding: 8px 15px;
+        min-width: 60px;
+    }
+    .score-box div {
+        font-size: 1.5em;
+    }
+    #game-board {
+        gap: 8px;
+        border-width: 8px;
+    }
+    .tile-cell {
+        font-size: 1.5em; /* Adjust tile font size for smaller screens */
+    }
+    .tile {
+        /* font-size will be adjusted by JS for tiles */
+    }
+    .tile-128, .tile-256, .tile-512 { /* font-size: 1.3em; */ }
+    .tile-1024, .tile-2048, .tile-4096, .tile-8192 { /* font-size: 1.1em; */ }
+
+    .message-overlay p {
+        font-size: 2em;
+    }
+    .game-button {
+        padding: 8px 15px;
+    }
+}
+
+@media (max-width: 380px) {
+    h1 {
+        font-size: 2em;
+    }
+    .scores-container {
+        flex-direction: column; /* Stack score boxes on very small screens */
+    }
+    .score-box {
+        width: 100%;
+        margin-bottom: 5px;
+    }
+    .tile-cell {
+        font-size: 1.2em;
+    }
+    .tile-128, .tile-256, .tile-512 { /* font-size: 1em; */ }
+    .tile-1024, .tile-2048, .tile-4096, .tile-8192 { /* font-size: 0.8em; */ }
+
+    .message-overlay p {
+        font-size: 1.5em;
+    }
+}
+
